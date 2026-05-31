@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin – Bank Soal SD</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563EB;--blue-lt:#DBEAFE;--blue-dk:#1D4ED8;
+  --green:#16A34A;--green-lt:#DCFCE7;
+  --red:#DC2626;--red-lt:#FEE2E2;
+  --amber:#D97706;--amber-lt:#FEF3C7;
+  --purple:#7C3AED;--purple-lt:#EDE9FE;
+  --gray-50:#F8FAFC;--gray-100:#F1F5F9;--gray-200:#E2E8F0;
+  --gray-400:#94A3B8;--gray-600:#475569;--gray-700:#334155;--gray-800:#1E293B;
+  --white:#fff;--radius:12px;--radius-sm:8px;
+  --shadow:0 2px 12px rgba(0,0,0,.08);
+}
+body{font-family:'Nunito',sans-serif;background:var(--gray-50);min-height:100vh;color:var(--gray-800)}
+
+/* HEADER */
+.header{background:var(--gray-800);color:white;padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.header-logo{width:36px;height:36px;background:linear-gradient(135deg,#2563EB,#16A34A);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header h1{font-family:'Baloo 2',cursive;font-size:18px;font-weight:800}
+.header p{font-size:11px;color:#94A3B8}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.admin-badge{background:#EF4444;color:white;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px}
+.btn-logout-admin{padding:6px 14px;border:1px solid rgba(255,255,255,.2);border-radius:var(--radius-sm);background:transparent;color:white;font-size:12px;font-weight:700;cursor:pointer}
+.btn-logout-admin:hover{background:rgba(255,255,255,.1)}
+
+/* LOGIN */
+.login-wrap{max-width:400px;margin:60px auto;padding:0 16px}
+.login-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:32px;box-shadow:var(--shadow);text-align:center}
+.login-icon{font-size:48px;margin-bottom:12px}
+.login-title{font-family:'Baloo 2',cursive;font-size:22px;font-weight:800;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--gray-400);margin-bottom:24px}
+.form-group{text-align:left;margin-bottom:12px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px}
+input[type=email],input[type=password]{width:100%;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--gray-800);background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:10px 12px;outline:none;transition:border-color .15s}
+input:focus{border-color:var(--blue)}
+.btn-login{width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--blue);color:white;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px}
+.btn-login:hover{background:var(--blue-dk)}
+.login-err{color:var(--red);font-size:12px;font-weight:700;margin-top:8px;display:none}
+.access-denied{background:var(--red-lt);border:1px solid #FECACA;border-radius:var(--radius-sm);padding:12px;color:var(--red);font-size:13px;font-weight:700;margin-top:12px;display:none}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:24px 16px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:18px;box-shadow:var(--shadow)}
+.stat-icon{font-size:28px;margin-bottom:8px}
+.stat-val{font-family:'Baloo 2',cursive;font-size:28px;font-weight:800;line-height:1}
+.stat-lbl{font-size:12px;color:var(--gray-400);font-weight:700;margin-top:4px}
+.stat-card.blue .stat-val{color:var(--blue)}
+.stat-card.green .stat-val{color:var(--green)}
+.stat-card.amber .stat-val{color:var(--amber)}
+.stat-card.purple .stat-val{color:var(--purple)}
+
+/* CARD */
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:20px;box-shadow:var(--shadow);margin-bottom:20px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-family:'Baloo 2',cursive;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+
+/* SEARCH & FILTER */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.search-input{flex:1;min-width:200px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--gray-800);background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:8px 12px;outline:none}
+.search-input:focus{border-color:var(--blue)}
+.filter-select{font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--gray-700);background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:8px 10px;outline:none;cursor:pointer}
+.btn-refresh{padding:8px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);background:var(--white);font-size:13px;font-weight:700;color:var(--gray-600);cursor:pointer}
+.btn-refresh:hover{border-color:var(--blue);color:var(--blue)}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--gray-200);white-space:nowrap}
+td{padding:12px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-700);vertical-align:middle}
+tr:hover td{background:var(--gray-50)}
+tr:last-child td{border-bottom:none}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#16A34A);display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:800;flex-shrink:0}
+.user-info{display:flex;align-items:center;gap:10px}
+.user-name{font-weight:700;color:var(--gray-800)}
+.user-email{font-size:11px;color:var(--gray-400)}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:800}
+.badge-active{background:var(--green-lt);color:var(--green)}
+.badge-inactive{background:var(--gray-100);color:var(--gray-400)}
+.badge-google{background:var(--blue-lt);color:var(--blue)}
+.badge-email{background:var(--amber-lt);color:var(--amber)}
+.progress-mini{height:6px;background:var(--gray-200);border-radius:99px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle}
+.progress-mini-fill{height:100%;background:linear-gradient(90deg,#2563EB,#16A34A);border-radius:99px}
+.btn-detail{padding:5px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);background:var(--white);font-size:12px;font-weight:700;color:var(--gray-600);cursor:pointer}
+.btn-detail:hover{border-color:var(--blue);color:var(--blue)}
+.empty-state{text-align:center;padding:40px;color:var(--gray-400)}
+.empty-icon{font-size:40px;margin-bottom:8px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:var(--radius);padding:24px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{font-family:'Baloo 2',cursive;font-size:17px;font-weight:800}
+.btn-close{width:28px;height:28px;border:none;background:var(--gray-100);border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.detail-section{margin-bottom:16px}
+.detail-label{font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.detail-val{font-size:14px;font-weight:600;color:var(--gray-800)}
+.kelas-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kelas-box{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:10px;text-align:center}
+.kelas-box.done{border-color:var(--green);background:var(--green-lt)}
+.kelas-num{font-family:'Baloo 2',cursive;font-size:20px;font-weight:800}
+.kelas-pct{font-size:11px;color:var(--gray-400);margin-top:2px}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--gray-400)}
+.spinner{width:32px;height:32px;border:3px solid var(--gray-200);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">🏫</div>
+  <div>
+    <h1>Admin Panel</h1>
+    <p>Bank Soal SD – Kurikulum Merdeka</p>
+  </div>
+  <div class="header-right">
+    <span class="admin-badge">ADMIN</span>
+    <span id="adminEmail" style="font-size:12px;color:#94A3B8"></span>
+    <button class="btn-logout-admin" onclick="logoutAdmin()">Keluar</button>
+  </div>
+</header>
+
+<!-- LOGIN ADMIN -->
+<div id="loginSection">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-icon">🔐</div>
+      <div class="login-title">Admin Login</div>
+      <div class="login-sub">Hanya untuk administrator Bank Soal SD</div>
+      <div class="form-group">
+        <label>Email Admin</label>
+        <input type="email" id="adminEmailInput" placeholder="admin@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPassInput" placeholder="password" onkeydown="if(event.key==='Enter')loginAdmin()"/>
+      </div>
+      <div class="login-err" id="loginErr"></div>
+      <div class="access-denied" id="accessDenied">⛔ Akun ini tidak memiliki akses admin.</div>
+      <button class="btn-login" onclick="loginAdmin()">Masuk sebagai Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashSection" class="hidden">
+  <div class="container">
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-val" id="statTotal">–</div>
+        <div class="stat-lbl">Total User</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">📅</div>
+        <div class="stat-val" id="statHari">–</div>
+        <div class="stat-lbl">Daftar Hari Ini</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-icon">📚</div>
+        <div class="stat-val" id="statAktif">–</div>
+        <div class="stat-lbl">Sudah Kerjakan Soal</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-val" id="statUjian">–</div>
+        <div class="stat-lbl">Ujian Lulus</div>
+      </div>
+    </div>
+
+    <!-- USER TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👥 Daftar User</div>
+        <button class="btn-refresh" onclick="loadData()">🔄 Refresh</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Cari nama atau email..." oninput="filterUsers()"/>
+        <select class="filter-select" id="filterLogin" onchange="filterUsers()">
+          <option value="">Semua metode login</option>
+          <option value="google">Google</option>
+          <option value="email">Email</option>
+        </select>
+        <select class="filter-select" id="filterAktif" onchange="filterUsers()">
+          <option value="">Semua user</option>
+          <option value="aktif">Sudah kerjakan soal</option>
+          <option value="baru">Belum kerjakan soal</option>
+        </select>
+      </div>
+      <div id="loadingUsers" class="loading">
+        <div class="spinner"></div>
+        Memuat data user...
+      </div>
+      <div class="table-wrap hidden" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Login via</th>
+              <th>Daftar</th>
+              <th>Login terakhir</th>
+              <th>Progres</th>
+              <th>Bab Selesai</th>
+              <th>Ujian Lulus</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+        <div class="empty-state hidden" id="emptyState">
+          <div class="empty-icon">🔍</div>
+          <div>Tidak ada user yang cocok</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL DETAIL USER -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)tutupModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Detail User</div>
+      <button class="btn-close" onclick="tutupModal()">✕</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIG ====================
+// ⚠️ Ganti dengan kredensial Supabase kamu
+const SUPABASE_URL = 'GANTI_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'GANTI_SUPABASE_ANON_KEY';
+
+// ⚠️ Daftar email yang boleh akses admin
+const ADMIN_EMAILS = [
+  'bowonsp@gmail.com',  // ganti dengan email admin kamu
+];
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const MAPEL_LIST = ['Matematika','Bahasa Indonesia','IPAS','Pendidikan Pancasila','PJOK','Bahasa Inggris','Bahasa Jawa'];
+const NILAI_LULUS = 70;
+
+let allUsers = [];
+let allProgres = [];
+
+// ==================== AUTH ====================
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session) await cekAdmin(session.user);
+}
+
+async function loginAdmin(){
+  const email = document.getElementById('adminEmailInput').value.trim();
+  const pass = document.getElementById('adminPassInput').value;
+  const btn = document.querySelector('.btn-login');
+  if(!email||!pass){showLoginErr('Email dan password wajib diisi!');return;}
+  btn.textContent = 'Memproses...'; btn.disabled = true;
+  document.getElementById('loginErr').style.display = 'none';
+  document.getElementById('accessDenied').style.display = 'none';
+
+  const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
+  btn.textContent = 'Masuk sebagai Admin'; btn.disabled = false;
+  if(error){showLoginErr('Email atau password salah!');return;}
+  await cekAdmin(data.user);
+}
+
+async function cekAdmin(user){
+  if(!ADMIN_EMAILS.includes(user.email)){
+    document.getElementById('accessDenied').style.display = 'block';
+    await sb.auth.signOut();
+    return;
+  }
+  document.getElementById('loginSection').classList.add('hidden');
+  document.getElementById('dashSection').classList.remove('hidden');
+  document.getElementById('adminEmail').textContent = user.email;
+  await loadData();
+}
+
+async function logoutAdmin(){
+  await sb.auth.signOut();
+  window.location.reload();
+}
+
+function showLoginErr(msg){
+  const e = document.getElementById('loginErr');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+// ==================== LOAD DATA ====================
+async function loadData(){
+  document.getElementById('loadingUsers').classList.remove('hidden');
+  document.getElementById('tableWrap').classList.add('hidden');
+
+  try {
+    // Load users via auth.admin (perlu service role key)
+    // Untuk sekarang pakai tabel progres yang bisa diakses
+    const {data: progresData, error: progresErr} = await sb
+      .from('progres')
+      .select('*')
+      .order('updated_at', {ascending: false});
+
+    if(progresErr) throw progresErr;
+    allProgres = progresData || [];
+
+    // Load auth users via fungsi RPC (kita buat sederhana dari progres)
+    renderStats();
+    renderTable(allProgres);
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingUsers').innerHTML = `<div style="color:var(--red)">❌ Gagal memuat data: ${e.message}</div>`;
+  }
+}
+
+// ==================== STATS ====================
+function renderStats(){
+  const total = allProgres.length;
+  const hari = allProgres.filter(p => {
+    const d = new Date(p.updated_at);
+    const today = new Date();
+    return d.toDateString() === today.toDateString();
+  }).length;
+
+  let babSelesai = 0, ujianLulus = 0, userAktif = 0;
+  allProgres.forEach(p => {
+    const data = p.data || {};
+    let userPunyaBab = false;
+    for(const k of [1,2,3,4,5,6]){
+      for(const m of MAPEL_LIST){
+        const mp = data[k]?.[m] || {};
+        for(let i=1;i<=8;i++) if(mp['bab'+i]>=NILAI_LULUS){babSelesai++;userPunyaBab=true;}
+        if(mp['uts']>=NILAI_LULUS) ujianLulus++;
+        if(mp['uas']>=NILAI_LULUS) ujianLulus++;
+      }
+    }
+    if(userPunyaBab) userAktif++;
+  });
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statHari').textContent = hari;
+  document.getElementById('statAktif').textContent = userAktif;
+  document.getElementById('statUjian').textContent = ujianLulus;
+}
+
+// ==================== TABLE ====================
+function renderTable(data){
+  document.getElementById('loadingUsers').classList.add('hidden');
+  document.getElementById('tableWrap').classList.remove('hidden');
+
+  const tbody = document.getElementById('userTableBody');
+  tbody.innerHTML = '';
+
+  if(!data.length){
+    document.getElementById('emptyState').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('emptyState').classList.add('hidden');
+
+  data.forEach((p, idx) => {
+    const progresData = p.data || {};
+    // Hitung total bab & ujian lulus
+    let babSelesai = 0, ujianLulus = 0, totalBab = 0, totalUjian = 0;
+    for(const k of [1,2,3,4,5,6]){
+      for(const m of MAPEL_LIST){
+        const mp = progresData[k]?.[m] || {};
+        totalBab += 8; totalUjian += 2;
+        for(let i=1;i<=8;i++) if(mp['bab'+i]>=NILAI_LULUS) babSelesai++;
+        if(mp['uts']>=NILAI_LULUS) ujianLulus++;
+        if(mp['uas']>=NILAI_LULUS) ujianLulus++;
+      }
+    }
+    const pct = Math.round((babSelesai+ujianLulus)/(totalBab+totalUjian)*100);
+
+    const updatedAt = new Date(p.updated_at);
+    const tglUpdate = updatedAt.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+
+    const inisial = (p.user_id||'U').charAt(0).toUpperCase();
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="user-info">
+          <div class="avatar">${inisial}</div>
+          <div>
+            <div class="user-name">User ${idx+1}</div>
+            <div class="user-email">${p.user_id?.substring(0,8)}...</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-email">Email/Google</span></td>
+      <td style="font-size:12px;color:var(--gray-400)">–</td>
+      <td style="font-size:12px;color:var(--gray-400)">${tglUpdate}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%"></div></div>
+          <span style="font-size:12px;font-weight:700;color:var(--gray-600)">${pct}%</span>
+        </div>
+      </td>
+      <td><span style="font-weight:700;color:var(--blue)">${babSelesai}</span><span style="color:var(--gray-400);font-size:12px">/${totalBab}</span></td>
+      <td><span style="font-weight:700;color:var(--green)">${ujianLulus}</span><span style="color:var(--gray-400);font-size:12px">/${totalUjian}</span></td>
+      <td><button class="btn-detail" onclick="lihatDetail(${idx})">Detail</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ==================== FILTER ====================
+function filterUsers(){
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filterAktif = document.getElementById('filterAktif').value;
+
+  let filtered = allProgres.filter(p => {
+    const uid = (p.user_id||'').toLowerCase();
+    const matchSearch = !search || uid.includes(search);
+
+    let aktif = false;
+    const data = p.data || {};
+    outer: for(const k of [1,2,3,4,5,6]){
+      for(const m of MAPEL_LIST){
+        const mp = data[k]?.[m] || {};
+        for(let i=1;i<=8;i++) if(mp['bab'+i]>=NILAI_LULUS){aktif=true;break outer;}
+      }
+    }
+    const matchAktif = !filterAktif ||
+      (filterAktif==='aktif'&&aktif) ||
+      (filterAktif==='baru'&&!aktif);
+
+    return matchSearch && matchAktif;
+  });
+
+  renderTable(filtered);
+}
+
+// ==================== MODAL DETAIL ====================
+function lihatDetail(idx){
+  const p = allProgres[idx];
+  const data = p.data || {};
+
+  let html = `
+    <div class="detail-section">
+      <div class="detail-label">User ID</div>
+      <div class="detail-val" style="font-size:12px;font-family:monospace">${p.user_id}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">Terakhir Update</div>
+      <div class="detail-val">${new Date(p.updated_at).toLocaleString('id-ID')}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">Progres per Kelas</div>
+      <div class="kelas-progress">
+  `;
+
+  for(const k of [1,2,3,4,5,6]){
+    let babSelesai=0, ujianLulus=0;
+    for(const m of MAPEL_LIST){
+      const mp = data[k]?.[m] || {};
+      for(let i=1;i<=8;i++) if(mp['bab'+i]>=NILAI_LULUS) babSelesai++;
+      if(mp['uts']>=NILAI_LULUS) ujianLulus++;
+      if(mp['uas']>=NILAI_LULUS) ujianLulus++;
+    }
+    const total = MAPEL_LIST.length * 10;
+    const done = babSelesai + ujianLulus;
+    const pct = Math.round(done/total*100);
+    html += `
+      <div class="kelas-box ${pct===100?'done':''}">
+        <div class="kelas-num">Kelas ${k}</div>
+        <div class="kelas-pct">${done}/${total} (${pct}%)</div>
+      </div>
+    `;
+  }
+
+  html += `</div></div>`;
+
+  // Detail per mapel
+  html += `<div class="detail-section"><div class="detail-label">Detail per Mapel</div>`;
+  for(const m of MAPEL_LIST){
+    let babSelesai=0, ujianLulus=0;
+    for(const k of [1,2,3,4,5,6]){
+      const mp = data[k]?.[m] || {};
+      for(let i=1;i<=8;i++) if(mp['bab'+i]>=NILAI_LULUS) babSelesai++;
+      if(mp['uts']>=NILAI_LULUS) ujianLulus++;
+      if(mp['uas']>=NILAI_LULUS) ujianLulus++;
+    }
+    const total = 6*10;
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+        <span style="font-size:13px;font-weight:600">${m}</span>
+        <span style="font-size:12px;color:var(--gray-600)">${babSelesai} bab · ${ujianLulus} ujian lulus</span>
+      </div>
+    `;
+  }
+  html += `</div>`;
+
+  document.getElementById('modalTitle').textContent = `Detail User ${idx+1}`;
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function tutupModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+// ==================== START ====================
+init().catch(console.error);
+</script>
+</body>
+</html>
